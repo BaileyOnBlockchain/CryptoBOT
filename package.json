@@ -1,0 +1,49 @@
+{
+  "name": "cryptobot",
+  "version": "1.0.0",
+  "description": "Flash loan arbitrage bot for crypto trading",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "hardhat run scripts/deploy.js --network base-mainnet",
+    "deploy:testnet": "hardhat run scripts/deploy.js --network base-sepolia",
+    "deploy:local": "hardhat run scripts/deploy-local.js",
+    "deploy:mainnet": "hardhat run scripts/deploy-mainnet.js --network base-mainnet",
+    "compile": "hardhat compile",
+    "start": "node bot.js",
+    "start:enhanced": "node bot-enhanced.js",
+    "monitor": "node monitoring/performance-monitor.js",
+    "dashboard": "node monitoring/dashboard-server.js",
+    "test:alerts": "node -e \"const AlertSystem = require('./monitoring/alert-system'); const alerts = new AlertSystem(); alerts.testEmailConfiguration();\"",
+    "emergency:stop": "node emergency-stop.js",
+    "emergency:withdraw": "node emergency-withdraw.js",
+    "emergency:status": "node emergency-status.js",
+    "emergency:manual": "node manual-emergency.js"
+  },
+  "keywords": [
+    "crypto",
+    "arbitrage",
+    "flashloan",
+    "defi"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "chart.js": "^4.4.0",
+    "dotenv": "^17.2.1",
+    "ethers": "^6.15.0",
+    "express": "^4.18.2",
+    "moment": "^2.29.4",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.7",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@aave/core-v3": "^1.19.3",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@uniswap/v3-periphery": "^1.4.4",
+    "hardhat": "^2.19.0"
+  }
+}

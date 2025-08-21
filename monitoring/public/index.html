@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoBot Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ffffff;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 3s infinite;
+        }
+
+        .status-online { background-color: #00ff00; }
+        .status-offline { background-color: #ff0000; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid #333333;
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+            color: #ffffff;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+            border-color: #4CAF50;
+        }
+
+        .metric-title {
+            font-size: 0.9rem;
+            color: #cccccc;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .metric-change {
+            font-size: 0.8rem;
+            color: #4CAF50;
+        }
+
+        .metric-change.negative {
+            color: #ff4444;
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            border: 1px solid #333333;
+            color: #ffffff;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+
+        .trades-section {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+            border: 1px solid #333333;
+            color: #ffffff;
+        }
+
+        .trades-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .trades-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .trades-table th,
+        .trades-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333333;
+            color: #ffffff;
+        }
+
+        .trades-table th {
+            background-color: #2a2a2a;
+            font-weight: 600;
+            color: #cccccc;
+        }
+
+        .trades-table tr:hover {
+            background-color: #2a2a2a;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background-color: #1a4a1a;
+            color: #00ff00;
+        }
+
+        .status-failed {
+            background-color: #4a1a1a;
+            color: #ff4444;
+        }
+
+        .export-buttons {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .export-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 0 10px;
+            font-size: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #45a049;
+        }
+
+        .export-btn.secondary {
+            background: #2196F3;
+        }
+
+        .export-btn.secondary:hover {
+            background: #1976D2;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #cccccc;
+        }
+
+        .error {
+            background: #4a1a1a;
+            color: #ff4444;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #ff4444;
+        }
+
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 CryptoBot Performance Dashboard</h1>
+            <p>
+                <span class="status-indicator status-online" id="statusIndicator"></span>
+                <span id="statusText">Connecting...</span>
+            </p>
+        </div>
+
+        <div class="export-buttons">
+            <button class="export-btn" onclick="exportData('json')">📊 Export JSON</button>
+            <button class="export-btn secondary" onclick="exportData('csv')">📈 Export CSV</button>
+        </div>
+
+        <div class="metrics-grid" id="metricsGrid">
+            <div class="loading">Loading metrics...</div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-title">Profitability Trend (7 Days)</div>
+                <canvas id="profitabilityChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Success Rate</div>
+                <canvas id="successRateChart"></canvas>
+            </div>
+        </div>
+
+        <div class="trades-section">
+            <div class="trades-header">
+                <h3>Recent Trades</h3>
+                <span id="lastUpdate"></span>
+            </div>
+            <div id="tradesTable">
+                <div class="loading">Loading trades...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let profitabilityChart;
+        let successRateChart;
+        let isConnected = false;
+
+        // Initialize WebSocket connection
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                console.log('WebSocket connected');
+                isConnected = true;
+                updateStatus(true);
+                loadInitialData();
+            };
+            
+            ws.onmessage = function(event) {
+                const message = JSON.parse(event.data);
+                handleWebSocketMessage(message);
+            };
+            
+            ws.onclose = function() {
+                console.log('WebSocket disconnected');
+                isConnected = false;
+                updateStatus(false);
+                // Reconnect after 5 seconds
+                setTimeout(initWebSocket, 5000);
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                isConnected = false;
+                updateStatus(false);
+            };
+        }
+
+        function updateStatus(online) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+            
+            if (online) {
+                indicator.className = 'status-indicator status-online';
+                text.textContent = 'Connected - Real-time updates active';
+            } else {
+                indicator.className = 'status-indicator status-offline';
+                text.textContent = 'Disconnected - Attempting to reconnect...';
+            }
+        }
+
+        async function loadInitialData() {
+            try {
+                const [metrics, summary, trades, trends] = await Promise.all([
+                    fetch('/api/metrics').then(r => r.json()),
+                    fetch('/api/summary').then(r => r.json()),
+                    fetch('/api/trades?limit=20').then(r => r.json()),
+                    fetch('/api/trends?days=7').then(r => r.json())
+                ]);
+
+                updateMetrics(metrics);
+                updateTradesTable(trades);
+                updateCharts(trends, summary);
+                updateLastUpdate();
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+                showError('Failed to load initial data');
+            }
+        }
+
+        function handleWebSocketMessage(message) {
+            switch (message.type) {
+                case 'initial_data':
+                    updateMetrics(message.data.metrics);
+                    updateTradesTable(message.data.recentTrades);
+                    updateCharts(message.data.profitabilityTrend, message.data.summary);
+                    break;
+                case 'metrics_update':
+                    updateMetrics(message.data);
+                    break;
+                case 'trade_update':
+                    // Add new trade to the table
+                    addTradeToTable(message.data);
+                    break;
+                case 'summary_update':
+                    // Update charts with new summary data
+                    updateCharts(null, message.data);
+                    break;
+            }
+            updateLastUpdate();
+        }
+
+        function updateMetrics(metrics) {
+            const grid = document.getElementById('metricsGrid');
+            
+            const metricCards = [
+                {
+                    title: 'Total Trades',
+                    value: metrics.totalTrades || 0,
+                    change: null
+                },
+                {
+                    title: 'Success Rate',
+                    value: `${metrics.successRate || 0}%`,
+                    change: null
+                },
+                {
+                    title: 'Total Profit',
+                    value: `${(metrics.totalProfit || 0).toFixed(6)} USDC`,
+                    change: null
+                },
+                {
+                    title: 'Average Profit/Trade',
+                    value: `${(metrics.averageProfitPerTrade || 0).toFixed(6)} USDC`,
+                    change: null
+                },
+                {
+                    title: 'Uptime',
+                    value: `${Math.floor((metrics.uptimeMinutes || 0) / 60)}h ${(metrics.uptimeMinutes || 0) % 60}m`,
+                    change: null
+                },
+                {
+                    title: 'Consecutive Failures',
+                    value: metrics.consecutiveFailures || 0,
+                    change: null
+                }
+            ];
+
+            grid.innerHTML = metricCards.map(card => `
+                <div class="metric-card">
+                    <div class="metric-title">${card.title}</div>
+                    <div class="metric-value">${card.value}</div>
+                    ${card.change ? `<div class="metric-change ${card.change >= 0 ? '' : 'negative'}">${card.change >= 0 ? '+' : ''}${card.change}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function updateTradesTable(trades) {
+            const table = document.getElementById('tradesTable');
+            
+            if (!trades || trades.length === 0) {
+                table.innerHTML = '<div class="loading">No trades found</div>';
+                return;
+            }
+
+            const tableHTML = `
+                <table class="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Token</th>
+                            <th>Amount</th>
+                            <th>Profit</th>
+                            <th>Gas Cost</th>
+                            <th>Status</th>
+                            <th>TX Hash</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${trades.map(trade => `
+                            <tr>
+                                <td>${moment(trade.timestamp).format('MMM DD, HH:mm:ss')}</td>
+                                <td>${trade.token_address}</td>
+                                <td>${parseFloat(trade.amount).toFixed(6)}</td>
+                                <td>${parseFloat(trade.profit || 0).toFixed(6)}</td>
+                                <td>${parseFloat(trade.gas_cost || 0).toFixed(6)}</td>
+                                <td>
+                                    <span class="status-badge status-${trade.status === 'success' ? 'success' : 'failed'}">
+                                        ${trade.status}
+                                    </span>
+                                </td>
+                                <td>
+                                    ${trade.tx_hash ? 
+                                        `<a href="https://basescan.org/tx/${trade.tx_hash}" target="_blank" style="color: #2196F3; text-decoration: none;">
+                                            ${trade.tx_hash.substring(0, 8)}...
+                                        </a>` : 
+                                        'N/A'
+                                    }
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            table.innerHTML = tableHTML;
+        }
+
+        function addTradeToTable(trade) {
+            const table = document.getElementById('tradesTable');
+            const tbody = table.querySelector('tbody');
+            
+            if (!tbody) return;
+            
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${moment(trade.timestamp).format('MMM DD, HH:mm:ss')}</td>
+                <td>${trade.token_address}</td>
+                <td>${parseFloat(trade.amount).toFixed(6)}</td>
+                <td>${parseFloat(trade.profit || 0).toFixed(6)}</td>
+                <td>${parseFloat(trade.gas_cost || 0).toFixed(6)}</td>
+                <td>
+                    <span class="status-badge status-${trade.status === 'success' ? 'success' : 'failed'}">
+                        ${trade.status}
+                    </span>
+                </td>
+                <td>
+                    ${trade.tx_hash ? 
+                        `<a href="https://basescan.org/tx/${trade.tx_hash}" target="_blank" style="color: #2196F3; text-decoration: none;">
+                            ${trade.tx_hash.substring(0, 8)}...
+                        </a>` : 
+                        'N/A'
+                    }
+                </td>
+            `;
+            
+            tbody.insertBefore(newRow, tbody.firstChild);
+            
+            // Remove old rows if more than 20
+            if (tbody.children.length > 20) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+
+        function updateCharts(trends, summary) {
+            if (trends && trends.length > 0) {
+                updateProfitabilityChart(trends);
+            }
+            
+            if (summary) {
+                updateSuccessRateChart(summary);
+            }
+        }
+
+        function updateProfitabilityChart(trends) {
+            const ctx = document.getElementById('profitabilityChart').getContext('2d');
+            
+            if (profitabilityChart) {
+                profitabilityChart.destroy();
+            }
+            
+            const labels = trends.map(t => moment(t.date).format('MMM DD'));
+            const data = trends.map(t => parseFloat(t.daily_profit || 0));
+            
+            profitabilityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Daily Profit (USDC)',
+                        data: data,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSuccessRateChart(summary) {
+            const ctx = document.getElementById('successRateChart').getContext('2d');
+            
+            if (successRateChart) {
+                successRateChart.destroy();
+            }
+            
+            const total = summary.total_trades || 0;
+            const successful = summary.successful_trades || 0;
+            const failed = summary.failed_trades || 0;
+            
+            if (total === 0) return;
+            
+            successRateChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Successful', 'Failed'],
+                    datasets: [{
+                        data: [successful, failed],
+                        backgroundColor: ['#4CAF50', '#f44336'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateLastUpdate() {
+            document.getElementById('lastUpdate').textContent = 
+                `Last updated: ${moment().format('MMM DD, HH:mm:ss')}`;
+        }
+
+        function showError(message) {
+            const container = document.querySelector('.container');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            container.insertBefore(errorDiv, container.firstChild);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        async function exportData(format) {
+            try {
+                const response = await fetch(`/api/export/${format}`);
+                
+                if (format === 'csv') {
+                    const blob = new Blob([response.text()], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `trading-metrics-${moment().format('YYYY-MM-DD')}.csv`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    const data = await response.json();
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `trading-metrics-${moment().format('YYYY-MM-DD')}.json`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                console.error('Export failed:', error);
+                showError('Export failed. Please try again.');
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initWebSocket();
+        });
+    </script>
+</body>
+</html>
